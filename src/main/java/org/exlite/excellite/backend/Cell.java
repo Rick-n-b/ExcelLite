@@ -24,9 +24,10 @@ public class Cell {
         textField = new TextField();
         textField.setPrefSize(width, height);
         textField.setMinSize(width, height);
-        textField.setLayoutX(Table.ASSIST_COLUMN_SIZE + column * width);
-        textField.setLayoutY(Table.ASSIST_COLUMN_SIZE + line  * height);
-        owner.grid.getChildren().add(textField);
+        textField.setLayoutX(column * width);
+        textField.setLayoutY(line  * height);
+        owner.table.getChildren().add(textField);
+        //owner.grid.getChildren().add(textField);
     }
 
     public void hide(){

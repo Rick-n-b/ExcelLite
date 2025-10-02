@@ -5,6 +5,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Control;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.Pane;
 import javafx.scene.text.Font;
 
@@ -13,21 +14,30 @@ import java.util.ArrayList;
 public class Table {
     public Pane grid;
     private ScrollPane controlGrid;
+    public AnchorPane table;
     private boolean isSelected;
     private double columnWidth = 100, lineHeight = 40;
-    public static final double ASSIST_COLUMN_SIZE = 30;
+    public static final double ASSIST_COLUMN_SIZE = 40;
     private Button addColumnButton;
     private Button addLineButton;
     private ArrayList<ArrayList<Cell>> cells;
 
     public Table(Pane grid){
         this.grid = grid;
-
+        this.grid.resize(grid.getScene().getWindow().getWidth(), grid.getScene().getWindow().getHeight());
+        controlGrid = new ScrollPane();
+        table = new AnchorPane();
+        controlGrid.setContent(table);
         cells = new ArrayList<>();
         initialization();
     }
 
     public void initialization(){
+
+        grid.getChildren().add(controlGrid);
+        controlGrid.setLayoutX(ASSIST_COLUMN_SIZE);
+        controlGrid.setLayoutY(ASSIST_COLUMN_SIZE);
+        System.out.println(grid.getWidth() + " " + grid.getHeight());
 
         for(int i = 0; i < 4; i++){
             createLeftAssistCell(i);
@@ -143,4 +153,7 @@ public class Table {
                 cell.hide();
     }
 
+    public ScrollPane getControlGrid() {
+        return controlGrid;
+    }
 }
