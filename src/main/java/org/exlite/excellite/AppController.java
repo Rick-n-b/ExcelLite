@@ -50,8 +50,8 @@ public class AppController implements Initializable {
 
     @FXML
     void addTable(ActionEvent event) {
-        tabPane.getTabs().add(new Tab("Table " + (tabPane.getTabs().size() + 1), new Pane()));
-        tables.add(new Table((Pane) tabPane.getTabs().getLast().getContent()));
+        tabPane.getTabs().add(new Tab("Table " + (tabPane.getTabs().size() + 1), new ScrollPane()));
+        tables.add(new Table((ScrollPane) tabPane.getTabs().getLast().getContent()));
         tabPane.getSelectionModel().clearAndSelect(tabPane.getTabs().size() - 1);
     }
 

@@ -27,32 +27,16 @@ public class Table {
     private Button addLineButton;
     private ArrayList<ArrayList<Cell>> cells;
 
-    public Table(Pane grid){
-        this.grid = grid;
+    public Table(ScrollPane grid){
+        this.controlGrid = grid;
         initialization();
     }
 
     public void initialization(){
 
-        controlGrid = new ScrollPane();
-        table = new AnchorPane();
+        scrollPaneInit();
+
         cells = new ArrayList<>();
-
-        grid.getChildren().add(controlGrid);
-
-        table.resize(columnWidth * N + ASSIST_COLUMN_SIZE * 2, lineHeight * N + ASSIST_COLUMN_SIZE * 2);
-        controlGrid.resize(grid.getScene().getWindow().getWidth(), grid.getScene().getWindow().getHeight() * 0.85);
-        controlGrid.setPrefSize(grid.getScene().getWindow().getWidth(), grid.getScene().getWindow().getHeight() * 0.85);
-
-        ChangeListener<Number> stageSizeListener = (observable, oldValue, newValue) ->
-        {
-            controlGrid.resize(grid.getScene().getWindow().getWidth(), grid.getScene().getWindow().getHeight() * 0.85);
-            controlGrid.setPrefSize(grid.getScene().getWindow().getWidth(), grid.getScene().getWindow().getHeight() * 0.85);
-            System.out.println("Height: " + grid.getScene().getWindow().getHeight() + " Width: " + grid.getScene().getWindow().getWidth() + "Stage");
-            System.out.println("Height: " + controlGrid.getHeight() + " Width: " + controlGrid.getWidth() + "Control");
-        };
-        grid.getScene().getWindow().widthProperty().addListener(stageSizeListener);
-        controlGrid.setContent(table);
 
         for(int i = 0; i < N; i++){
             createLeftAssistCell(i);
@@ -69,6 +53,23 @@ public class Table {
         repositionColumnAddButton();
         repositionLineAddButton();
 
+    }
+
+    private void scrollPaneInit(){
+        table = new AnchorPane();
+
+        table.resize(columnWidth * N + ASSIST_COLUMN_SIZE * 2, lineHeight * N + ASSIST_COLUMN_SIZE * 2);
+        controlGrid.resize(controlGrid.getScene().getWindow().getWidth(), controlGrid.getScene().getWindow().getHeight() * 0.85);;
+
+        ChangeListener<Number> stageSizeListener = (observable, oldValue, newValue) ->
+        {
+            controlGrid.resize(controlGrid.getScene().getWindow().getWidth(), controlGrid.getScene().getWindow().getHeight() * 0.85);
+            System.out.println(controlGrid.getScene().getWindow().getWidth()+ " " + controlGrid.getScene().getWindow().getHeight() * 0.85);
+        };
+
+        controlGrid.getScene().getWindow().widthProperty().addListener(stageSizeListener);
+
+        controlGrid.setContent(table);
     }
 
     private void buttonInitialize(){
@@ -92,6 +93,8 @@ public class Table {
         table.getChildren().add(addColumnButton);
         table.getChildren().add(addLineButton);
     }
+
+
 
     private void createLeftAssistCell(int num){
         var numeric = new TextField();
@@ -131,7 +134,6 @@ public class Table {
         }
         cells.add(column);
         table.resize(table.getWidth() + columnWidth, table.getHeight());
-        table.setPrefSize(table.getWidth() + columnWidth, table.getHeight());
         System.out.println(table.getWidth() + " " + table.getHeight());
         repositionColumnAddButton();
     }
@@ -145,7 +147,6 @@ public class Table {
         }
 
         table.resize(table.getWidth(), table.getHeight() + lineHeight);
-        table.setPrefSize(table.getWidth(), table.getHeight() + lineHeight);
         System.out.println(table.getWidth() + " " + table.getHeight());
         repositionLineAddButton();
 
