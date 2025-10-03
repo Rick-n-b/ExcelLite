@@ -18,21 +18,30 @@ import java.util.ArrayList;
 public class Table {
     public Pane grid;
     private ScrollPane controlGrid;
+    private Button addColumnButton;
+    private Button addLineButton;
+    public static TextField positionText;
+    public static TextField innerText;
+
     public AnchorPane table;
     private boolean isSelected;
     private double columnWidth = 100, lineHeight = 40;
     public static final double ASSIST_COLUMN_SIZE = 40;
-    int N = 4;
-    private Button addColumnButton;
-    private Button addLineButton;
+    public static final int N = 4;
+    int columns = N, lines = N;
+
+
+
     private ArrayList<ArrayList<Cell>> cells;
 
-    public Table(ScrollPane grid){
+    public Table(ScrollPane grid, TextField positionText,TextField innerText){
         this.controlGrid = grid;
+        Table.positionText = positionText;
+        Table.innerText = innerText;
         initialization();
     }
 
-    public void initialization(){
+    private void initialization(){
 
         scrollPaneInit();
 
@@ -46,7 +55,6 @@ public class Table {
             cells.add(new ArrayList<>());
             for(int j = 0; j < N; j++){
                 cells.getLast().add(new Cell(this, j, i, columnWidth, lineHeight));
-                cells.getLast().getLast().outputStr = j + " " + i;
             }
         }
         buttonInitialize();
@@ -136,6 +144,7 @@ public class Table {
         table.resize(table.getWidth() + columnWidth, table.getHeight());
         System.out.println(table.getWidth() + " " + table.getHeight());
         repositionColumnAddButton();
+        columns++;
     }
 
     public void addLine(){
@@ -149,7 +158,7 @@ public class Table {
         table.resize(table.getWidth(), table.getHeight() + lineHeight);
         System.out.println(table.getWidth() + " " + table.getHeight());
         repositionLineAddButton();
-
+        lines++;
     }
 
     private void repositionLineAddButton(){
@@ -179,5 +188,16 @@ public class Table {
 
     public ScrollPane getControlGrid() {
         return controlGrid;
+    }
+
+    public ArrayList<ArrayList<Cell>> getCells() {
+        return cells;
+    }
+
+    public int getColumns() {
+        return columns;
+    }
+    public int getLines() {
+        return lines;
     }
 }
