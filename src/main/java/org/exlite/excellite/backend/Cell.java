@@ -22,10 +22,10 @@ public class Cell {
         this.line = line;
         this.column = column;
         textField = new TextField();
+        textField.resize(width, height);
         textField.setPrefSize(width, height);
-        textField.setMinSize(width, height);
-        textField.setLayoutX(column * width);
-        textField.setLayoutY(line  * height);
+        textField.setLayoutX(column * width + Table.ASSIST_COLUMN_SIZE);
+        textField.setLayoutY(line  * height + Table.ASSIST_COLUMN_SIZE);
         owner.table.getChildren().add(textField);
         //owner.grid.getChildren().add(textField);
     }

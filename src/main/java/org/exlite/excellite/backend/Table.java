@@ -1,5 +1,9 @@
 package org.exlite.excellite.backend;
 
+import javafx.beans.value.ChangeListener;
+import javafx.geometry.Bounds;
+import javafx.geometry.Point2D;
+import javafx.geometry.Point3D;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Control;
@@ -18,34 +22,45 @@ public class Table {
     private boolean isSelected;
     private double columnWidth = 100, lineHeight = 40;
     public static final double ASSIST_COLUMN_SIZE = 40;
+    int N = 4;
     private Button addColumnButton;
     private Button addLineButton;
     private ArrayList<ArrayList<Cell>> cells;
 
     public Table(Pane grid){
         this.grid = grid;
-        this.grid.resize(grid.getScene().getWindow().getWidth(), grid.getScene().getWindow().getHeight());
-        controlGrid = new ScrollPane();
-        table = new AnchorPane();
-        controlGrid.setContent(table);
-        cells = new ArrayList<>();
         initialization();
     }
 
     public void initialization(){
 
-        grid.getChildren().add(controlGrid);
-        controlGrid.setLayoutX(ASSIST_COLUMN_SIZE);
-        controlGrid.setLayoutY(ASSIST_COLUMN_SIZE);
-        System.out.println(grid.getWidth() + " " + grid.getHeight());
+        controlGrid = new ScrollPane();
+        table = new AnchorPane();
+        cells = new ArrayList<>();
 
-        for(int i = 0; i < 4; i++){
+        grid.getChildren().add(controlGrid);
+
+        table.resize(columnWidth * N + ASSIST_COLUMN_SIZE * 2, lineHeight * N + ASSIST_COLUMN_SIZE * 2);
+        controlGrid.resize(grid.getScene().getWindow().getWidth(), grid.getScene().getWindow().getHeight() * 0.85);
+        controlGrid.setPrefSize(grid.getScene().getWindow().getWidth(), grid.getScene().getWindow().getHeight() * 0.85);
+
+        ChangeListener<Number> stageSizeListener = (observable, oldValue, newValue) ->
+        {
+            controlGrid.resize(grid.getScene().getWindow().getWidth(), grid.getScene().getWindow().getHeight() * 0.85);
+            controlGrid.setPrefSize(grid.getScene().getWindow().getWidth(), grid.getScene().getWindow().getHeight() * 0.85);
+            System.out.println("Height: " + grid.getScene().getWindow().getHeight() + " Width: " + grid.getScene().getWindow().getWidth() + "Stage");
+            System.out.println("Height: " + controlGrid.getHeight() + " Width: " + controlGrid.getWidth() + "Control");
+        };
+        grid.getScene().getWindow().widthProperty().addListener(stageSizeListener);
+        controlGrid.setContent(table);
+
+        for(int i = 0; i < N; i++){
             createLeftAssistCell(i);
             createTopAssistCell(i);
         }
-        for(int i = 0; i < 4; i++){
+        for(int i = 0; i < N; i++){
             cells.add(new ArrayList<>());
-            for(int j = 0; j < 4; j++){
+            for(int j = 0; j < N; j++){
                 cells.getLast().add(new Cell(this, j, i, columnWidth, lineHeight));
                 cells.getLast().getLast().outputStr = j + " " + i;
             }
@@ -61,21 +76,21 @@ public class Table {
         addColumnButton = new Button();
 
         addLineButton.setText("+");
-        addLineButton.setMinSize(ASSIST_COLUMN_SIZE, ASSIST_COLUMN_SIZE);
+        addLineButton.resize(ASSIST_COLUMN_SIZE, ASSIST_COLUMN_SIZE);
         addLineButton.setPrefSize(ASSIST_COLUMN_SIZE, ASSIST_COLUMN_SIZE);
         addLineButton.setAlignment(Pos.CENTER);
         addLineButton.setFont(Font.font(14));
         addLineButton.setOnAction(e -> addLine());
 
         addColumnButton.setText("+");
-        addColumnButton.setMinSize(ASSIST_COLUMN_SIZE, ASSIST_COLUMN_SIZE);
+        addColumnButton.resize(ASSIST_COLUMN_SIZE, ASSIST_COLUMN_SIZE);
         addColumnButton.setPrefSize(ASSIST_COLUMN_SIZE, ASSIST_COLUMN_SIZE);
         addColumnButton.setAlignment(Pos.CENTER);
         addColumnButton.setFont(Font.font(14));
         addColumnButton.setOnAction(e -> addColumn());
 
-        grid.getChildren().add(addColumnButton);
-        grid.getChildren().add(addLineButton);
+        table.getChildren().add(addColumnButton);
+        table.getChildren().add(addLineButton);
     }
 
     private void createLeftAssistCell(int num){
@@ -88,7 +103,7 @@ public class Table {
         numeric.setLayoutX(0);
         numeric.setLayoutY(ASSIST_COLUMN_SIZE + num * lineHeight);
         numeric.setFont(Font.font(14));
-        grid.getChildren().add(numeric);
+        table.getChildren().add(numeric);
     }
 
     private void createTopAssistCell(int num){
@@ -105,7 +120,7 @@ public class Table {
         numeric.setLayoutX(ASSIST_COLUMN_SIZE + num * columnWidth);
         numeric.setLayoutY(0);
         numeric.setFont(Font.font(14));
-        grid.getChildren().add(numeric);
+        table.getChildren().add(numeric);
     }
 
     public void addColumn(){
@@ -115,6 +130,9 @@ public class Table {
             column.add(new Cell(this, i, cells.size(), columnWidth, lineHeight));
         }
         cells.add(column);
+        table.resize(table.getWidth() + columnWidth, table.getHeight());
+        table.setPrefSize(table.getWidth() + columnWidth, table.getHeight());
+        System.out.println(table.getWidth() + " " + table.getHeight());
         repositionColumnAddButton();
     }
 
@@ -125,7 +143,12 @@ public class Table {
             line.add(new Cell(this, line.size(), i, columnWidth, lineHeight));
             i++;
         }
+
+        table.resize(table.getWidth(), table.getHeight() + lineHeight);
+        table.setPrefSize(table.getWidth(), table.getHeight() + lineHeight);
+        System.out.println(table.getWidth() + " " + table.getHeight());
         repositionLineAddButton();
+
     }
 
     private void repositionLineAddButton(){
