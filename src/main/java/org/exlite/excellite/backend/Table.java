@@ -101,8 +101,6 @@ public class Table {
         table.getChildren().add(addLineButton);
     }
 
-
-
     private void createLeftAssistCell(int num){
         var numeric = new TextField();
         numeric.setText("" + (num + 1));
@@ -161,15 +159,12 @@ public class Table {
     private void repositionLineAddButton(){
         addLineButton.setLayoutX(0);
         addLineButton.setLayoutY(ASSIST_COLUMN_SIZE + cells.getFirst().size() * lineHeight);
-
     }
 
     private void repositionColumnAddButton(){
         addColumnButton.setLayoutX(ASSIST_COLUMN_SIZE + cells.size() * columnWidth);
         addColumnButton.setLayoutY(0);
     }
-
-
 
     public void show(){
         for(var column : cells)
@@ -183,14 +178,9 @@ public class Table {
                 cell.hide();
     }
 
-    public ScrollPane getControlGrid() {
-        return controlGrid;
-    }
-
     public ArrayList<ArrayList<Cell>> getCells() {
         return cells;
     }
-
     public int getColumns() {
         return columns;
     }

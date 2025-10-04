@@ -1,22 +1,20 @@
 package org.exlite.excellite.backend;
 
 import javafx.beans.property.SimpleStringProperty;
-import javafx.beans.property.StringProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
-import javafx.event.EventHandler;
 import javafx.scene.control.TextField;
-import javafx.scene.input.KeyEvent;
+
+import java.util.Stack;
 
 public class Cell {
-    private Table owner;
+    private final Table owner;
     private TextField textField;
     public final int line, column;
     private double width, height;
     private boolean isFocused;
 
     public String outputStr;
-    private String innerStr;
     public SimpleStringProperty innerStrProperty;
 
     public enum DataType{
@@ -38,7 +36,7 @@ public class Cell {
     }
 
     private void textFieldInit(){
-        innerStrProperty = new SimpleStringProperty(innerStr);
+        innerStrProperty = new SimpleStringProperty("");
         innerStrProperty.addListener(((observableValue, oldStr, nStr) -> {
             if(nStr != null){
                 var coor = Cell.coordinateDeParse(Table.positionText.getText());
@@ -46,12 +44,6 @@ public class Cell {
                 if(coor[0] == column){
                     if(coor[1] == line){
                         changeText(innerStrProperty.get());
-                        if(innerStrProperty.get().charAt(0) == '=')
-                            dataType = DataType.FORMULA;
-                        else if(innerStrProperty.get().matches("dd/MM/YYYY"))
-                            dataType = DataType.DATE;
-                        else
-                            dataType = DataType.STRING;
                     }
                 }
             }
@@ -69,7 +61,6 @@ public class Cell {
                 if(isFocused){
                     Table.positionText.setText(coordinateParse());
                     Table.innerText.setText(innerStrProperty.get());
-                    textField.setText(innerStrProperty.get());
 
                 }else{
                     textField.setText(outputStr);
@@ -81,29 +72,163 @@ public class Cell {
         textField.textProperty().addListener(new ChangeListener<String>() {
             @Override
             public void changed(ObservableValue<? extends String> observableValue, String s, String t1) {
-                innerStrProperty.set(textField.getText());
-                Table.innerText.setText(innerStrProperty.get());
-                //System.out.println("O: " + outputStr + " ||  I: " + innerStrProperty.get());
+                if(dataType != DataType.FORMULA){
+                    innerStrProperty.set(textField.getText());
+                    Table.innerText.setText(innerStrProperty.get());
+                }
+
+                System.out.println("O: " + outputStr + " ||  I: " + innerStrProperty.get());
             }
         });
 
         owner.table.getChildren().add(textField);
     }
 
+    private void dataValidation() {
+        if (innerStrProperty.get() != null)
+            if (!innerStrProperty.get().isEmpty())
+                if (innerStrProperty.get().charAt(0) == '=')
+                    dataType = DataType.FORMULA;
+                else if (innerStrProperty.get().matches("dd/MM/YYYY"))//doesnt work as wanted
+                    dataType = DataType.DATE;
+                else
+                    dataType = DataType.STRING;
+    }
+
     public void changeText(String text){
-        innerStrProperty.set(text);
+
+        dataValidation();
         if(dataType != DataType.FORMULA){
+            innerStrProperty.set(text);
             outputStr = text;
         }else{
-            calculate(text);
+            //calculate(text.substring(1));
+            innerStrProperty.set(text);
+            outputStr = String.valueOf(evaluate(text.substring(1)));
         }
 
         if(!isFocused)
             textField.setText(outputStr);
     }
 
-    private void calculate(String text){
+    private String calculate(String text){
 
+        int first = -1;
+
+        for(int i = 0; i < text.length(); i++){
+            if(text.charAt(i) == '(')
+                first = i;
+            if(text.charAt(i) == ')'){
+                if(first < 0)
+                    return "Err";
+                text = text.replace(text.substring(first, i), calculate(text.substring(first, i)));
+                i = 0;
+                first = -1;
+            }
+        }
+        if(first >= 0)
+            return "Err";
+
+        return text;
+    }
+    // Метод для определения приоритета оператора
+    private static int getPrecedence(char operator) {
+        switch (operator) {
+            case '+':
+            case '-':
+                return 1;
+            case '*':
+            case '/':
+                return 2;
+        }
+        return 0; // Для скобок и других символов
+    }
+
+    // Метод для выполнения операции
+    private static double applyOperation(double a, double b, char operator) {
+        switch (operator) {
+            case '+':
+                return a + b;
+            case '-':
+                return a - b;
+            case '*':
+                return a * b;
+            case '/':
+                if (b == 0) {
+                    throw new ArithmeticException("Деление на ноль!");
+                }
+                return a / b;
+        }
+        return 0; // Не должно произойти
+    }
+
+    public static String evaluate(String expression) {
+        // Убираем пробелы для удобства парсинга
+        expression = expression.replaceAll("\\s", "");
+
+        Stack<Double> values = new Stack<>();
+        Stack<Character> operators = new Stack<>();
+
+        for (int i = 0; i < expression.length(); i++) {
+            char c = expression.charAt(i);
+
+            if (Character.isDigit(c) || (c == '-' && (i == 0 || expression.charAt(i - 1) == '('))) {
+                // Если это число или отрицательное число в начале или после скобки
+                StringBuilder sb = new StringBuilder();
+                if (c == '-') {
+                    sb.append(c);
+                    i++;
+                    c = expression.charAt(i); // Берем следующую цифру
+                }
+                while (i < expression.length() && (Character.isDigit(expression.charAt(i)) || expression.charAt(i) == '.')) {
+                    sb.append(expression.charAt(i));
+                    i++;
+                }
+                values.push(Double.parseDouble(sb.toString()));
+                i--; // Откат на один индекс, так как внешний цикл инкрементирует i
+            } else if (c == '(') {
+                operators.push(c);
+            } else if (c == ')') {
+                while (!operators.isEmpty() && operators.peek() != '(') {
+                    values.push(applyOperation(values.pop(), values.pop(), operators.pop()));
+                }
+                if (!operators.isEmpty() && operators.peek() == '(') {
+                    operators.pop(); // Удаляем открывающую скобку
+                } else {
+                    throw new IllegalArgumentException("Неправильные скобки в выражении!");
+                }
+            } else if (c == '+' || c == '-' || c == '*' || c == '/') {
+                // Обработка оператора
+                while (!operators.isEmpty() && getPrecedence(c) <= getPrecedence(operators.peek())) {
+                    values.push(applyOperation(values.pop(), values.pop(), operators.pop()));
+                }
+                operators.push(c);
+            } else {
+                throw new IllegalArgumentException("Недопустимый символ в выражении: " + c);
+            }
+        }
+
+        // Обработка оставшихся операторов
+        while (!operators.isEmpty()) {
+            if(!values.isEmpty()){
+                var firstOperand = values.pop();
+                if(!values.isEmpty()) {
+                    var secondOperand = values.pop();
+                    values.push(applyOperation(firstOperand, secondOperand, operators.pop()));
+                }else{
+                    break;
+                }
+            }else{
+                break;
+            }
+        }
+
+        // Результат находится на вершине стека чисел
+        if (values.size() == 1) {
+            return String.valueOf(values.pop());
+        } else {
+            return "err";
+        }
     }
 
     private String coordinateParse(){
@@ -163,10 +288,4 @@ public class Cell {
         return textField;
     }
 
-    public void setInnerStr(String innerStr) {
-        this.innerStr = innerStr;
-    }
-    public String getInnerStr() {
-        return innerStr;
-    }
 }
