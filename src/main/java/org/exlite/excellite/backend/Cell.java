@@ -66,14 +66,15 @@ public class Cell {
                 }else{
                     textField.setText(outputStr);
                 }
-                System.out.println();
+
             }
         }));
 
         textField.setOnKeyPressed(new EventHandler<KeyEvent>() {
             @Override
             public void handle(KeyEvent keyEvent) {
-                changeText(textField.getText());
+                innerStrProperty.set(textField.getText());
+                System.out.println("O: " + outputStr + " ||  I: " + innerStrProperty.get());
             }
         });
 
@@ -87,6 +88,9 @@ public class Cell {
         }else{
             calculate(text);
         }
+
+        if(!isFocused)
+            textField.setText(outputStr);
     }
 
     private void calculate(String text){
