@@ -57,6 +57,8 @@ public class AppController implements Initializable {
         tables.add(new Table((ScrollPane) tabPane.getTabs().getLast().getContent(), positionText, innerText));
         tabPane.getSelectionModel().clearAndSelect(tabPane.getTabs().size() - 1);
         currentTable = tables.get(tabPane.getSelectionModel().getSelectedIndex());
+        positionText.clear();
+        innerText.clear();
     }
 
     @FXML
@@ -64,13 +66,15 @@ public class AppController implements Initializable {
 
         tabPane.getTabs().remove(tabPane.getSelectionModel().getSelectedIndex());
         tables.remove(currentTable);
-
+        positionText.clear();
+        innerText.clear();
     }
 
     @FXML
     void renameTable(ActionEvent event) {
 
         tabPane.getTabs().get(tabPane.getSelectionModel().getSelectedIndex()).setText(tableRenameText.getText());
+
     }
 
 
@@ -87,8 +91,11 @@ public class AppController implements Initializable {
                 if(tabPane.getSelectionModel().getSelectedIndex() < tables.size())
                     currentTable = tables.get(tabPane.getSelectionModel().getSelectedIndex());
                 tableRenameText.setText(tabPane.getSelectionModel().getSelectedItem().getText());
+                positionText.clear();
+                innerText.clear();
             }
         });
+
         positionText.setOnKeyPressed(new EventHandler<KeyEvent>() {
             @Override
             public void handle(KeyEvent keyEvent) {
@@ -96,7 +103,6 @@ public class AppController implements Initializable {
                     case ENTER:
                         var column = Cell.coordinateDeParse(positionText.getText())[0];
                         var line = Cell.coordinateDeParse(positionText.getText())[1];
-                        System.out.println(column + " " + line);
 
                         if (column < currentTable.getColumns() && column >= 0) {
                             if (line < currentTable.getLines() && line >= 0) {
@@ -104,6 +110,20 @@ public class AppController implements Initializable {
                             }
                         }
                         break;
+                }
+            }
+        });
+
+        innerText.setOnKeyPressed(new EventHandler<KeyEvent>() {
+            @Override
+            public void handle(KeyEvent keyEvent) {
+                var column = Cell.coordinateDeParse(positionText.getText())[0];
+                var line = Cell.coordinateDeParse(positionText.getText())[1];
+
+                if (column < currentTable.getColumns() && column >= 0) {
+                    if (line < currentTable.getLines() && line >= 0) {
+                        currentTable.getCells().get(column).get(line).changeText(innerText.getText());
+                    }
                 }
             }
         });

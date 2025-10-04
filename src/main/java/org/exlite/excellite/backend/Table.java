@@ -72,7 +72,6 @@ public class Table {
         ChangeListener<Number> stageSizeListener = (observable, oldValue, newValue) ->
         {
             controlGrid.resize(controlGrid.getScene().getWindow().getWidth(), controlGrid.getScene().getWindow().getHeight() * 0.85);
-            System.out.println(controlGrid.getScene().getWindow().getWidth()+ " " + controlGrid.getScene().getWindow().getHeight() * 0.85);
         };
 
         controlGrid.getScene().getWindow().widthProperty().addListener(stageSizeListener);
@@ -142,7 +141,6 @@ public class Table {
         }
         cells.add(column);
         table.resize(table.getWidth() + columnWidth, table.getHeight());
-        System.out.println(table.getWidth() + " " + table.getHeight());
         repositionColumnAddButton();
         columns++;
     }
@@ -156,7 +154,6 @@ public class Table {
         }
 
         table.resize(table.getWidth(), table.getHeight() + lineHeight);
-        System.out.println(table.getWidth() + " " + table.getHeight());
         repositionLineAddButton();
         lines++;
     }

@@ -1,6 +1,10 @@
 package org.exlite.excellite.backend;
 
+import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.property.StringProperty;
+import javafx.event.EventHandler;
 import javafx.scene.control.TextField;
+import javafx.scene.input.KeyEvent;
 
 public class Cell {
     private Table owner;
@@ -9,8 +13,9 @@ public class Cell {
     private double width, height;
     private boolean isFocused;
 
-    public String outputStr = "";
+    public String outputStr;
     private String innerStr;
+    public SimpleStringProperty innerStrProperty;
 
     public enum DataType{
         STRING,
@@ -18,6 +23,7 @@ public class Cell {
         FORMULA
     }
 
+    public DataType dataType;
 
     public Cell(Table owner, int line, int column, double width, double height){
         this.owner = owner;
@@ -25,12 +31,24 @@ public class Cell {
         this.column = column;
         this.width = width;
         this.height = height;
-
+        dataType = DataType.STRING;
         textFieldInit();
-
     }
 
     private void textFieldInit(){
+        innerStrProperty = new SimpleStringProperty(innerStr);
+        innerStrProperty.addListener(((observableValue, oldStr, nStr) -> {
+            if(nStr != null){
+                var coor = Cell.coordinateDeParse(Table.positionText.getText());
+
+                if(coor[0] == column){
+                    if(coor[1] == line){
+                        changeText(innerStrProperty.get());
+                    }
+                }
+            }
+        }));
+
         textField = new TextField();
         textField.resize(width, height);
         textField.setPrefSize(width, height);
@@ -42,17 +60,37 @@ public class Cell {
                 isFocused = newVal;
                 if(isFocused){
                     Table.positionText.setText(coordinateParse());
-                    Table.innerText.setText(innerStr);
+                    Table.innerText.setText(innerStrProperty.get());
+                    textField.setText(innerStrProperty.get());
+
+                }else{
+                    textField.setText(outputStr);
                 }
+                System.out.println();
             }
         }));
 
-        textField.onKeyTypedProperty().addListener(((obs, oldVal, newVal) -> {
-
-        }));
-
+        textField.setOnKeyPressed(new EventHandler<KeyEvent>() {
+            @Override
+            public void handle(KeyEvent keyEvent) {
+                changeText(textField.getText());
+            }
+        });
 
         owner.table.getChildren().add(textField);
+    }
+
+    public void changeText(String text){
+        innerStrProperty.set(text);
+        if(dataType != DataType.FORMULA){
+            outputStr = text;
+        }else{
+            calculate(text);
+        }
+    }
+
+    private void calculate(String text){
+
     }
 
     private String coordinateParse(){
@@ -110,5 +148,12 @@ public class Cell {
 
     public TextField getTextField() {
         return textField;
+    }
+
+    public void setInnerStr(String innerStr) {
+        this.innerStr = innerStr;
+    }
+    public String getInnerStr() {
+        return innerStr;
     }
 }
