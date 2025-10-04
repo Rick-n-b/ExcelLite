@@ -2,6 +2,8 @@ package org.exlite.excellite.backend;
 
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.event.EventHandler;
 import javafx.scene.control.TextField;
 import javafx.scene.input.KeyEvent;
@@ -44,6 +46,12 @@ public class Cell {
                 if(coor[0] == column){
                     if(coor[1] == line){
                         changeText(innerStrProperty.get());
+                        if(innerStrProperty.get().charAt(0) == '=')
+                            dataType = DataType.FORMULA;
+                        else if(innerStrProperty.get().matches("dd/MM/YYYY"))
+                            dataType = DataType.DATE;
+                        else
+                            dataType = DataType.STRING;
                     }
                 }
             }
@@ -66,15 +74,16 @@ public class Cell {
                 }else{
                     textField.setText(outputStr);
                 }
-
             }
         }));
 
-        textField.setOnKeyPressed(new EventHandler<KeyEvent>() {
+
+        textField.textProperty().addListener(new ChangeListener<String>() {
             @Override
-            public void handle(KeyEvent keyEvent) {
+            public void changed(ObservableValue<? extends String> observableValue, String s, String t1) {
                 innerStrProperty.set(textField.getText());
-                System.out.println("O: " + outputStr + " ||  I: " + innerStrProperty.get());
+                Table.innerText.setText(innerStrProperty.get());
+                //System.out.println("O: " + outputStr + " ||  I: " + innerStrProperty.get());
             }
         });
 

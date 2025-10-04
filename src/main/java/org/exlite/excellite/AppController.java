@@ -1,5 +1,7 @@
 package org.exlite.excellite;
 
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
@@ -83,6 +85,20 @@ public class AppController implements Initializable {
 
     }
 
+    private void positionSet(){
+        if(positionText.getText() == null || positionText.getText().isEmpty())
+            return;
+
+        var column = Cell.coordinateDeParse(positionText.getText())[0];
+        var line = Cell.coordinateDeParse(positionText.getText())[1];
+
+        if (column < currentTable.getColumns() && column >= 0) {
+            if (line < currentTable.getLines() && line >= 0) {
+                currentTable.getCells().get(column).get(line).setFocused();
+            }
+        }
+    }
+
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
         tables = new ArrayList<>();
@@ -101,22 +117,21 @@ public class AppController implements Initializable {
             public void handle(KeyEvent keyEvent) {
                 switch (keyEvent.getCode()) {
                     case ENTER:
-                        var column = Cell.coordinateDeParse(positionText.getText())[0];
-                        var line = Cell.coordinateDeParse(positionText.getText())[1];
-
-                        if (column < currentTable.getColumns() && column >= 0) {
-                            if (line < currentTable.getLines() && line >= 0) {
-                                currentTable.getCells().get(column).get(line).setFocused();
-                            }
-                        }
+                        positionSet();
                         break;
                 }
             }
         });
 
-        innerText.setOnKeyPressed(new EventHandler<KeyEvent>() {
+        positionText.focusedProperty().addListener( (obs, oldVal, nVal)-> {
+            if(!nVal){
+                positionSet();
+            }
+        });
+
+        innerText.textProperty().addListener(new ChangeListener<String>() {
             @Override
-            public void handle(KeyEvent keyEvent) {
+            public void changed(ObservableValue<? extends String> observableValue, String s, String t1) {
                 var column = Cell.coordinateDeParse(positionText.getText())[0];
                 var line = Cell.coordinateDeParse(positionText.getText())[1];
 
@@ -127,6 +142,8 @@ public class AppController implements Initializable {
                 }
             }
         });
+
+
     }
 
 
