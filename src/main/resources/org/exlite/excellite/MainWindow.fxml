@@ -1,9 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.scene.control.Button?>
-<?import javafx.scene.control.ContextMenu?>
 <?import javafx.scene.control.Label?>
-<?import javafx.scene.control.MenuItem?>
 <?import javafx.scene.control.SplitPane?>
 <?import javafx.scene.control.TabPane?>
 <?import javafx.scene.control.TextField?>
@@ -24,18 +22,6 @@
                   <Font size="14.0" />
                </font>
             </TextField>
-            <Button fx:id="constant" layoutX="319.0" layoutY="34.0" mnemonicParsing="false" onAction="#constantPressed" text="e" textAlignment="CENTER">
-               <contextMenu>
-                  <ContextMenu>
-                    <items>
-                      <MenuItem mnemonicParsing="false" text="e" />
-                    </items>
-                  </ContextMenu>
-               </contextMenu>
-               <font>
-                  <Font name="System Italic" size="14.0" />
-               </font>
-            </Button>
             <Button fx:id="addTableButton" layoutX="537.0" layoutY="52.0" mnemonicParsing="false" onAction="#addTable" prefWidth="100.0" text="Add Table" />
             <TextField fx:id="tableRenameText" layoutX="599.0" layoutY="23.0" prefHeight="25.0" prefWidth="240.0" promptText="Table" />
             <Label layoutX="537.0" layoutY="25.0" text="Rename:">

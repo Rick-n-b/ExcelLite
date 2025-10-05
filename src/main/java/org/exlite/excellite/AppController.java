@@ -23,8 +23,6 @@ public class AppController implements Initializable {
     @FXML
     private Button addTableButton;
 
-    @FXML
-    private Button constant;
 
     @FXML
     private Button deleteTableButton;
@@ -102,6 +100,8 @@ public class AppController implements Initializable {
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
         tables = new ArrayList<>();
+
+
         tabPane.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue != null) {
                 if(tabPane.getSelectionModel().getSelectedIndex() < tables.size())

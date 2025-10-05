@@ -31,27 +31,29 @@ public class Table {
     private int columns = N, lines = N;
 
     private ArrayList<ArrayList<Cell>> cells;
+    private ArrayList<Cell> smartCells;
 
-    public Table(ScrollPane grid, TextField positionText,TextField innerText){
+    public Table(ScrollPane grid, TextField positionText, TextField innerText) {
         this.controlGrid = grid;
         Table.positionText = positionText;
         Table.innerText = innerText;
         initialization();
     }
 
-    private void initialization(){
+    private void initialization() {
 
         scrollPaneInit();
 
         cells = new ArrayList<>();
+        smartCells = new ArrayList<>();
 
-        for(int i = 0; i < N; i++){
+        for (int i = 0; i < N; i++) {
             createLeftAssistCell(i);
             createTopAssistCell(i);
         }
-        for(int i = 0; i < N; i++){
+        for (int i = 0; i < N; i++) {
             cells.add(new ArrayList<>());
-            for(int j = 0; j < N; j++){
+            for (int j = 0; j < N; j++) {
                 cells.getLast().add(new Cell(this, j, i, columnWidth, lineHeight));
             }
         }
@@ -61,11 +63,12 @@ public class Table {
 
     }
 
-    private void scrollPaneInit(){
+    private void scrollPaneInit() {
         table = new AnchorPane();
 
         table.resize(columnWidth * N + ASSIST_COLUMN_SIZE * 2, lineHeight * N + ASSIST_COLUMN_SIZE * 2);
-        controlGrid.resize(controlGrid.getScene().getWindow().getWidth(), controlGrid.getScene().getWindow().getHeight() * 0.85);;
+        controlGrid.resize(controlGrid.getScene().getWindow().getWidth(), controlGrid.getScene().getWindow().getHeight() * 0.85);
+        ;
 
         ChangeListener<Number> stageSizeListener = (observable, oldValue, newValue) ->
         {
@@ -77,7 +80,7 @@ public class Table {
         controlGrid.setContent(table);
     }
 
-    private void buttonInitialize(){
+    private void buttonInitialize() {
         addLineButton = new Button();
         addColumnButton = new Button();
 
@@ -99,7 +102,7 @@ public class Table {
         table.getChildren().add(addLineButton);
     }
 
-    private void createLeftAssistCell(int num){
+    private void createLeftAssistCell(int num) {
         var numeric = new TextField();
         numeric.setText("" + (num + 1));
         numeric.setEditable(false);
@@ -112,12 +115,12 @@ public class Table {
         table.getChildren().add(numeric);
     }
 
-    private void createTopAssistCell(int num){
+    private void createTopAssistCell(int num) {
         var numeric = new TextField();
         String numLetter = "";
-        do{
-            numLetter += String.valueOf((char)((num % 25) + 64 + 1));
-        }while (num / 25 > 0);
+        do {
+            numLetter += String.valueOf((char) ((num % 25) + 64 + 1));
+        } while (num / 25 > 0);
         numeric.setText(numLetter);
         numeric.setEditable(false);
         numeric.setMinSize(columnWidth, ASSIST_COLUMN_SIZE);
@@ -129,10 +132,10 @@ public class Table {
         table.getChildren().add(numeric);
     }
 
-    public void addColumn(){
+    public void addColumn() {
         createTopAssistCell(cells.size());
-        var column =  new ArrayList<Cell>();
-        for(int i = 0; i < cells.getFirst().size(); i++){
+        var column = new ArrayList<Cell>();
+        for (int i = 0; i < cells.getFirst().size(); i++) {
             column.add(new Cell(this, i, cells.size(), columnWidth, lineHeight));
         }
         cells.add(column);
@@ -141,10 +144,10 @@ public class Table {
         columns++;
     }
 
-    public void addLine(){
+    public void addLine() {
         createLeftAssistCell(cells.getLast().size());
         int i = 0;
-        for(var line : cells){
+        for (var line : cells) {
             line.add(new Cell(this, line.size(), i, columnWidth, lineHeight));
             i++;
         }
@@ -154,37 +157,54 @@ public class Table {
         lines++;
     }
 
-    private void repositionLineAddButton(){
+    private void repositionLineAddButton() {
         addLineButton.setLayoutX(0);
         addLineButton.setLayoutY(ASSIST_COLUMN_SIZE + cells.getFirst().size() * lineHeight);
     }
 
-    private void repositionColumnAddButton(){
+    private void repositionColumnAddButton() {
         addColumnButton.setLayoutX(ASSIST_COLUMN_SIZE + cells.size() * columnWidth);
         addColumnButton.setLayoutY(0);
     }
 
-    public void show(){
-        for(var column : cells)
-            for(var cell : column)
+    public void updateSmartCells(Cell curr){
+        for(var smart : smartCells){
+            if(smart != curr){
+                smart.outputStr = String.valueOf(smart.evaluate(smart.innerStrProperty.get().substring(1)));
+                System.out.println("upd O: " + smart.outputStr + " ||  I: " + smart.innerStrProperty.get());
+                smart.getTextField().setText(smart.outputStr);
+            }
+        }
+    }
+
+    public void show() {
+        for (var column : cells)
+            for (var cell : column)
                 cell.show();
     }
 
-    public void hide(){
-        for(var column : cells)
-            for(var cell : column)
+    public void hide() {
+        for (var column : cells)
+            for (var cell : column)
                 cell.hide();
     }
 
     public ArrayList<ArrayList<Cell>> getCells() {
         return cells;
     }
-    public Cell getCell(int column, int line){
+
+    public Cell getCell(int column, int line) {
         return cells.get(column).get(line);
     }
+
+    public ArrayList<Cell> getSmartCells() {
+        return smartCells;
+    }
+
     public int getColumns() {
         return columns;
     }
+
     public int getLines() {
         return lines;
     }
