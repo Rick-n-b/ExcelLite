@@ -186,7 +186,6 @@ public class Cell {
                         case "\\E", "\\e" -> Math.E;
                         default -> 0;
                     };
-
                     if(myConst == 0)
                         return "err";
                     values.push(myConst);

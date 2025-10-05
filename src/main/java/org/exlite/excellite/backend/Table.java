@@ -9,8 +9,13 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Control;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
+import javafx.scene.control.skin.TextFieldSkin;
 import javafx.scene.layout.AnchorPane;
+import javafx.scene.layout.Background;
+import javafx.scene.layout.BackgroundFill;
 import javafx.scene.layout.Pane;
+import javafx.scene.paint.Color;
+import javafx.scene.paint.Paint;
 import javafx.scene.text.Font;
 
 import java.util.ArrayList;
@@ -187,6 +192,28 @@ public class Table {
         for (var column : cells)
             for (var cell : column)
                 cell.hide();
+    }
+
+    public void voidSearch(String value) {
+        for (var column : cells) {
+            for (var cell : column) {
+                cell.getTextField().setSkin(new TextFieldSkin(cell.getTextField()) {
+                    @Override
+                    protected void layoutChildren(double x, double y, double w, double h) {
+                        super.layoutChildren(x, y, w, h);
+                        if(cell.getTextField().getText().contains(value) && !value.isEmpty())
+                            textFillProperty().setValue(Color.GREEN);
+                        else if(value.isEmpty())
+                            textFillProperty().setValue(Color.BLACK);
+                        else
+                            textFillProperty().setValue(Color.BLACK);
+                        cell.getTextField().getProperties().put("colorChanged", true);
+
+                    }
+                });
+
+            }
+        }
     }
 
     public ArrayList<ArrayList<Cell>> getCells() {

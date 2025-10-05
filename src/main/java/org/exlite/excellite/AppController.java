@@ -23,7 +23,6 @@ public class AppController implements Initializable {
     @FXML
     private Button addTableButton;
 
-
     @FXML
     private Button deleteTableButton;
 
@@ -34,6 +33,15 @@ public class AppController implements Initializable {
     private TextField positionText;
 
     @FXML
+    private TextField searchText;
+
+    @FXML
+    private TextField tableRenameText;
+
+    @FXML
+    private Button searchButton;
+
+    @FXML
     private Button renameTableButton;
 
     @FXML
@@ -41,9 +49,6 @@ public class AppController implements Initializable {
 
     @FXML
     private TabPane tabPane;
-
-    @FXML
-    private TextField tableRenameText;
 
     @FXML
     private AnchorPane topMenu;
@@ -59,28 +64,33 @@ public class AppController implements Initializable {
         currentTable = tables.get(tabPane.getSelectionModel().getSelectedIndex());
         positionText.clear();
         innerText.clear();
+
     }
 
     @FXML
     void deleteTable(ActionEvent event) {
 
-        tabPane.getTabs().remove(tabPane.getSelectionModel().getSelectedIndex());
-        tables.remove(currentTable);
-        positionText.clear();
-        innerText.clear();
+        if(tabPane.getSelectionModel().getSelectedIndex() != -1){
+            tabPane.getTabs().remove(tabPane.getSelectionModel().getSelectedIndex());
+            tables.remove(currentTable);
+            positionText.clear();
+            innerText.clear();
+        }
+
     }
 
     @FXML
     void renameTable(ActionEvent event) {
 
-        tabPane.getTabs().get(tabPane.getSelectionModel().getSelectedIndex()).setText(tableRenameText.getText());
+        if(tabPane.getSelectionModel().getSelectedIndex() != -1)
+            tabPane.getTabs().get(tabPane.getSelectionModel().getSelectedIndex()).setText(tableRenameText.getText());
 
     }
 
-
     @FXML
-    void constantPressed(ActionEvent event) {
-
+    void search(ActionEvent event) {
+        if(currentTable != null)
+            currentTable.voidSearch(searchText.getText());
     }
 
     private void positionSet(){
@@ -89,12 +99,12 @@ public class AppController implements Initializable {
 
         var column = Cell.coordinateDeParse(positionText.getText())[0];
         var line = Cell.coordinateDeParse(positionText.getText())[1];
-
-        if (column < currentTable.getColumns() && column >= 0) {
-            if (line < currentTable.getLines() && line >= 0) {
-                currentTable.getCells().get(column).get(line).setFocused();
+        if(currentTable != null)
+            if (column < currentTable.getColumns() && column >= 0) {
+                if (line < currentTable.getLines() && line >= 0) {
+                    currentTable.getCells().get(column).get(line).setFocused();
+                }
             }
-        }
     }
 
     @Override
@@ -135,11 +145,12 @@ public class AppController implements Initializable {
                 var column = Cell.coordinateDeParse(positionText.getText())[0];
                 var line = Cell.coordinateDeParse(positionText.getText())[1];
 
-                if (column < currentTable.getColumns() && column >= 0) {
-                    if (line < currentTable.getLines() && line >= 0) {
-                        currentTable.getCells().get(column).get(line).changeText(innerText.getText());
+                if(currentTable != null)
+                    if (column < currentTable.getColumns() && column >= 0) {
+                        if (line < currentTable.getLines() && line >= 0) {
+                            currentTable.getCells().get(column).get(line).changeText(innerText.getText());
+                        }
                     }
-                }
             }
         });
 
