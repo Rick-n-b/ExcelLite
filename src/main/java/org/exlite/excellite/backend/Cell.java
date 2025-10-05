@@ -36,17 +36,17 @@ public class Cell {
     }
 
     private void textFieldInit(){
+        outputStr = "";
         innerStrProperty = new SimpleStringProperty("");
-        innerStrProperty.addListener(((observableValue, oldStr, nStr) -> {
-            if(nStr != null){
-                var coor = Cell.coordinateDeParse(Table.positionText.getText());
+        innerStrProperty.addListener((
+                (observableValue, oldStr, nStr) -> {
+                    if(nStr != null){
+                        var coor = Cell.coordinateDeParse(Table.positionText.getText());
 
-                if(coor[0] == column){
-                    if(coor[1] == line){
-                        changeText(innerStrProperty.get());
+                        if(coor[0] == column)
+                            if(coor[1] == line)
+                                changeText(innerStrProperty.get());
                     }
-                }
-            }
         }));
 
         textField = new TextField();
@@ -61,18 +61,16 @@ public class Cell {
                 if(isFocused){
                     Table.positionText.setText(coordinateParse());
                     Table.innerText.setText(innerStrProperty.get());
-
                 }else{
                     textField.setText(outputStr);
                 }
             }
         }));
 
-
         textField.textProperty().addListener(new ChangeListener<String>() {
             @Override
             public void changed(ObservableValue<? extends String> observableValue, String s, String t1) {
-                if(dataType != DataType.FORMULA){
+                if(isFocused){
                     innerStrProperty.set(textField.getText());
                     Table.innerText.setText(innerStrProperty.get());
                 }
@@ -86,13 +84,17 @@ public class Cell {
 
     private void dataValidation() {
         if (innerStrProperty.get() != null)
-            if (!innerStrProperty.get().isEmpty())
+            if (!innerStrProperty.get().isEmpty()){
                 if (innerStrProperty.get().charAt(0) == '=')
                     dataType = DataType.FORMULA;
                 else if (innerStrProperty.get().matches("dd/MM/YYYY"))//doesnt work as wanted
                     dataType = DataType.DATE;
                 else
                     dataType = DataType.STRING;
+            }else
+                dataType = DataType.STRING;
+
+
     }
 
     public void changeText(String text){
@@ -162,7 +164,7 @@ public class Cell {
         return 0; // Не должно произойти
     }
 
-    public static String evaluate(String expression) {
+    public String evaluate(String expression) {
         // Убираем пробелы для удобства парсинга
         expression = expression.replaceAll("\\s", "");
 
@@ -172,7 +174,7 @@ public class Cell {
         for (int i = 0; i < expression.length(); i++) {
             char c = expression.charAt(i);
 
-            if (Character.isDigit(c) || (c == '-' && (i == 0 || expression.charAt(i - 1) == '('))) {
+            if (Character.isDigit(c) || Character.isUpperCase(c) || (c == '-' && (i == 0 || expression.charAt(i - 1) == '('))) {
                 // Если это число или отрицательное число в начале или после скобки
                 StringBuilder sb = new StringBuilder();
                 if (c == '-') {
@@ -180,12 +182,34 @@ public class Cell {
                     i++;
                     c = expression.charAt(i); // Берем следующую цифру
                 }
-                while (i < expression.length() && (Character.isDigit(expression.charAt(i)) || expression.charAt(i) == '.')) {
-                    sb.append(expression.charAt(i));
-                    i++;
+                if(Character.isDigit(c)){
+                    while (i < expression.length() && (Character.isDigit(expression.charAt(i)) || expression.charAt(i) == '.')) {
+                        sb.append(expression.charAt(i));
+                        i++;
+                    }
+                    values.push(Double.valueOf(sb.toString()));
+                    i--; // Откат на один индекс, так как внешний цикл инкрементирует i
                 }
-                values.push(Double.parseDouble(sb.toString()));
-                i--; // Откат на один индекс, так как внешний цикл инкрементирует i
+                else if(Character.isUpperCase(c)){
+                    while (i < expression.length() && (Character.isDigit(expression.charAt(i)) || Character.isUpperCase(expression.charAt(i)))) {
+                        sb.append(expression.charAt(i));
+                        i++;
+                    }
+                    var coor = Cell.coordinateDeParse(sb.toString());
+                    if(coor[0] == -1 || coor[1] == -1 || coor[0] > owner.getColumns() - 1 || coor[1] > owner.getLines() - 1)
+                        return "err";
+
+                    double cellValue = 0;
+                    if(!owner.getCell(coor[0], coor[1]).outputStr.isEmpty())
+                        if(owner.getCell(coor[0], coor[1]).outputStr.matches("^(-?)(0|([1-9][0-9]*))(\\.[0-9]+)?$"))
+                            cellValue = Double.parseDouble(owner.getCell(coor[0], coor[1]).outputStr);
+                        else
+                            return "err";
+                    values.push(cellValue);
+                    i--; // Откат на один индекс, так как внешний цикл инкрементирует i
+                }
+
+
             } else if (c == '(') {
                 operators.push(c);
             } else if (c == ')') {
@@ -195,7 +219,8 @@ public class Cell {
                 if (!operators.isEmpty() && operators.peek() == '(') {
                     operators.pop(); // Удаляем открывающую скобку
                 } else {
-                    throw new IllegalArgumentException("Неправильные скобки в выражении!");
+                    //throw new IllegalArgumentException("Неправильные скобки в выражении!");
+                    return "err";
                 }
             } else if (c == '+' || c == '-' || c == '*' || c == '/') {
                 // Обработка оператора
@@ -204,7 +229,8 @@ public class Cell {
                 }
                 operators.push(c);
             } else {
-                throw new IllegalArgumentException("Недопустимый символ в выражении: " + c);
+                //throw new IllegalArgumentException("Недопустимый символ в выражении: " + c);
+                return "err";
             }
         }
 
@@ -250,22 +276,26 @@ public class Cell {
         return out;
     }
 
-    public static int[] coordinateDeParse(String coordinate){
+    public static int[] coordinateDeParse(String coordinate) {
         var out = new int[2];
         out[0] = -1;
         out[1] = -1;
+
+        if (coordinate == null || coordinate.isEmpty())
+            return out;
+
         char[] chars = coordinate.toCharArray();
         int i = 0;
-        while(chars[i] != '\0' && (chars[i] <= 'Z' && chars[i] >= 'A')){
+        while (i < chars.length && (chars[i] <= 'Z' && chars[i] >= 'A')) {
             out[0] += chars[i] - 64;
-            if(i > 3){
+            if (i == 3) {
                 out[0] = -1;
                 break;
             }
             i++;
         }
         String sub = coordinate.substring(i);
-        if(sub.matches("\\d{1,3}"))
+        if (sub.matches("\\d{1,3}"))
             out[1] = Integer.parseInt(sub) - 1;
 
 

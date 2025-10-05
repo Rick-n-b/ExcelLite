@@ -28,9 +28,7 @@ public class Table {
     private double columnWidth = 100, lineHeight = 40;
     public static final double ASSIST_COLUMN_SIZE = 40;
     public static final int N = 4;
-    int columns = N, lines = N;
-
-
+    private int columns = N, lines = N;
 
     private ArrayList<ArrayList<Cell>> cells;
 
@@ -180,6 +178,9 @@ public class Table {
 
     public ArrayList<ArrayList<Cell>> getCells() {
         return cells;
+    }
+    public Cell getCell(int column, int line){
+        return cells.get(column).get(line);
     }
     public int getColumns() {
         return columns;
