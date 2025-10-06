@@ -1,21 +1,19 @@
 package org.exlite.excellite.backend;
 
 import javafx.beans.property.SimpleStringProperty;
-import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableValue;
-import javafx.scene.control.TextField;
+import org.exlite.excellite.GUI.CellView;
 
 import java.util.Stack;
 
 public class Cell {
-    private final Table owner;
-    private TextField textField;
-    public final int line, column;
-    private double width, height;
-    private boolean isFocused;
+    public final CellView cellView;
 
-    public String outputStr;
-    public SimpleStringProperty innerStrProperty;
+    private final Table owner;
+    public final int line, column;
+
+
+    private String outputStr;
+    private SimpleStringProperty innerStrProperty;
 
     public enum DataType {
         STRING,
@@ -28,57 +26,8 @@ public class Cell {
         this.owner = owner;
         this.line = line;
         this.column = column;
-        this.width = width;
-        this.height = height;
         dataType = DataType.STRING;
-        textFieldInit();
-    }
-
-    private void textFieldInit() {
-        outputStr = "";
-        innerStrProperty = new SimpleStringProperty("");
-        innerStrProperty.addListener((
-                (observableValue, oldStr, nStr) -> {
-                    if (nStr != null) {
-                        var coor = Cell.coordinateDeParse(Table.positionText.getText());
-
-                        if (coor[0] == column)
-                            if (coor[1] == line)
-                                changeText(innerStrProperty.get());
-                    }
-                }));
-
-        textField = new TextField();
-        textField.resize(width, height);
-        textField.setPrefSize(width, height);
-        textField.setLayoutX(column * width + Table.ASSIST_COLUMN_SIZE);
-        textField.setLayoutY(line * height + Table.ASSIST_COLUMN_SIZE);
-
-        textField.focusedProperty().addListener(((obs, oldVal, newVal) -> {
-            if (newVal != null) {
-                isFocused = newVal;
-                if (isFocused) {
-                    Table.positionText.setText(coordinateParse());
-                    Table.innerText.setText(innerStrProperty.get());
-                    if(dataType == DataType.FORMULA)
-                        textField.setText(innerStrProperty.get());
-                } else {
-                    textField.setText(outputStr);
-                }
-            }
-        }));
-
-        textField.textProperty().addListener(new ChangeListener<String>() {
-            @Override
-            public void changed(ObservableValue<? extends String> observableValue, String s, String t1) {
-                if (isFocused) {
-                    innerStrProperty.set(textField.getText());
-                    Table.innerText.setText(innerStrProperty.get());
-                }
-            }
-        });
-
-        owner.table.getChildren().add(textField);
+        cellView = new CellView(owner.getTable(), this, width, height);
     }
 
     private void dataValidation() {
@@ -95,7 +44,7 @@ public class Cell {
     public void changeText(String text) {
 
         dataValidation();
-        if (dataType != DataType.FORMULA) {
+        if (dataType != Cell.DataType.FORMULA) {
             innerStrProperty.set(text);
             outputStr = text;
         } else {
@@ -104,8 +53,7 @@ public class Cell {
                 outputStr = String.valueOf(evaluate(text.substring(1)));
         }
         owner.updateSmartCells(this);
-        if (!isFocused)
-            textField.setText(outputStr);
+
     }
 
     // Метод для определения приоритета оператора
@@ -233,6 +181,10 @@ public class Cell {
         }
     }
 
+    public void reEvaluate(){
+        outputStr = evaluate(innerStrProperty.get().substring(1));
+    }
+
     private void updateSmart(){
         if(dataType == DataType.FORMULA){
             if (!owner.getSmartCells().contains(this))
@@ -287,23 +239,50 @@ public class Cell {
         return out;
     }
 
-    public void setFocused() {
-        textField.requestFocus();
+    public void highlight(){
+        cellView.hightlight();
     }
 
-    public void hide() {
-        textField.setVisible(false);
+    public void setFocused(){
+        cellView.setFocused();
     }
 
-    public void show() {
-        textField.setVisible(true);
-    }
 
-    public TextField getTextField() {
-        return textField;
-    }
 
+
+
+    //--getters ands setters
     public DataType getType() {
         return dataType;
+    }
+
+    public String getOutputStr(){
+        return outputStr;
+    }
+
+    public SimpleStringProperty getInnerStrProperty() {
+        return innerStrProperty;
+    }
+    public String getInnerStr(){
+        return innerStrProperty.get();
+    }
+
+    public void setOutputStr(String str){
+        this.outputStr = str;
+    }
+
+    public void setInnerStr(String str){
+        if(innerStrProperty != null)
+            this.innerStrProperty.set(str);
+        else
+            this.innerStrProperty = new SimpleStringProperty(str);
+    }
+
+    public void setOutText(String text){
+        cellView.setOutText(text);
+    }
+
+    public void setOutText(){
+        cellView.setOutText(outputStr);
     }
 }

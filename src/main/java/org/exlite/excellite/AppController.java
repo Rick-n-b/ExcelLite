@@ -101,7 +101,7 @@ public class AppController implements Initializable {
         var line = Cell.coordinateDeParse(positionText.getText())[1];
             if (column < currentTable.getColumns() && column >= 0) {
                 if (line < currentTable.getLines() && line >= 0) {
-                    currentTable.getCells().get(column).get(line).setFocused();
+                    currentTable.getCell(column, line).setFocused();
                 }
             }
     }
