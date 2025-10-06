@@ -21,15 +21,13 @@ import javafx.scene.text.Font;
 import java.util.ArrayList;
 
 public class Table {
-    public Pane grid;
     private ScrollPane controlGrid;
     private Button addColumnButton;
     private Button addLineButton;
     public static TextField positionText;
     public static TextField innerText;
-
     public AnchorPane table;
-    private boolean isSelected;
+
     private double columnWidth = 100, lineHeight = 40;
     public static final double ASSIST_COLUMN_SIZE = 40;
     public static final int N = 4;
@@ -176,7 +174,6 @@ public class Table {
         for(var smart : smartCells){
             if(smart != curr){
                 smart.outputStr = String.valueOf(smart.evaluate(smart.innerStrProperty.get().substring(1)));
-                System.out.println("upd O: " + smart.outputStr + " ||  I: " + smart.innerStrProperty.get());
                 smart.getTextField().setText(smart.outputStr);
             }
         }

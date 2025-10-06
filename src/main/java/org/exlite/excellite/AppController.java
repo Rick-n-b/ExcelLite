@@ -94,12 +94,11 @@ public class AppController implements Initializable {
     }
 
     private void positionSet(){
-        if(positionText.getText() == null || positionText.getText().isEmpty())
+        if(positionText.getText() == null || positionText.getText().isEmpty() || currentTable == null)
             return;
 
         var column = Cell.coordinateDeParse(positionText.getText())[0];
         var line = Cell.coordinateDeParse(positionText.getText())[1];
-        if(currentTable != null)
             if (column < currentTable.getColumns() && column >= 0) {
                 if (line < currentTable.getLines() && line >= 0) {
                     currentTable.getCells().get(column).get(line).setFocused();

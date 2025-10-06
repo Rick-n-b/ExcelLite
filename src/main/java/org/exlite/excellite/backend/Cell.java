@@ -19,7 +19,6 @@ public class Cell {
 
     public enum DataType {
         STRING,
-        DATE,
         FORMULA
     }
 
@@ -61,6 +60,8 @@ public class Cell {
                 if (isFocused) {
                     Table.positionText.setText(coordinateParse());
                     Table.innerText.setText(innerStrProperty.get());
+                    if(dataType == DataType.FORMULA)
+                        textField.setText(innerStrProperty.get());
                 } else {
                     textField.setText(outputStr);
                 }
@@ -74,8 +75,6 @@ public class Cell {
                     innerStrProperty.set(textField.getText());
                     Table.innerText.setText(innerStrProperty.get());
                 }
-
-                System.out.println("O: " + outputStr + " ||  I: " + innerStrProperty.get() + " Type: " + dataType);
             }
         });
 
@@ -135,7 +134,6 @@ public class Cell {
     }
 
     public String evaluate(String expression) {
-        // Убираем пробелы для удобства парсинга
         expression = expression.replaceAll("\\s", "");
 
         Stack<Double> values = new Stack<>();
@@ -145,12 +143,12 @@ public class Cell {
             char c = expression.charAt(i);
 
             if (Character.isDigit(c) || Character.isUpperCase(c) || c == '\\' || (c == '-' && (i == 0 || expression.charAt(i - 1) == '('))) {
-                // Если это число или отрицательное число в начале или после скобки
+
                 StringBuilder sb = new StringBuilder();
                 if (c == '-') {
                     sb.append(c);
                     i++;
-                    c = expression.charAt(i); // Берем следующую цифру
+                    c = expression.charAt(i);
                 }
                 if (Character.isDigit(c)) {
                     while (i < expression.length() && (Character.isDigit(expression.charAt(i)) || expression.charAt(i) == '.')) {
@@ -158,7 +156,7 @@ public class Cell {
                         i++;
                     }
                     values.push(Double.valueOf(sb.toString()));
-                    i--; // Откат на один индекс, так как внешний цикл инкрементирует i
+                    i--; // Откат на один индекс, так как внешний цикл i++
                 } else if (Character.isUpperCase(c)) {
                     while (i < expression.length() && (Character.isDigit(expression.charAt(i)) || Character.isUpperCase(expression.charAt(i)))) {
                         sb.append(expression.charAt(i));
@@ -175,7 +173,7 @@ public class Cell {
                         else
                             return "err";
                     values.push(cellValue);
-                    i--; // Откат на один индекс, так как внешний цикл инкрементирует i
+                    i--;
                 } else if (c == '\\') {
                     while (i < expression.length() && (Character.isAlphabetic(expression.charAt(i)) || expression.charAt(i) == '\\')) {
                         sb.append(expression.charAt(i));
@@ -191,8 +189,6 @@ public class Cell {
                     values.push(myConst);
                     i--;
                 }
-
-
             } else if (c == '(') {
                 operators.push(c);
             } else if (c == ')') {
@@ -202,17 +198,14 @@ public class Cell {
                 if (!operators.isEmpty() && operators.peek() == '(') {
                     operators.pop(); // Удаляем открывающую скобку
                 } else {
-                    //throw new IllegalArgumentException("Неправильные скобки в выражении!");
                     return "err";
                 }
             } else if (c == '+' || c == '-' || c == '*' || c == '/') {
-                // Обработка оператора
                 while (!operators.isEmpty() && getPrecedence(c) <= getPrecedence(operators.peek())) {
                     values.push(applyOperation(values.pop(), values.pop(), operators.pop()));
                 }
                 operators.push(c);
             } else {
-                //throw new IllegalArgumentException("Недопустимый символ в выражении: " + c);
                 return "err";
             }
         }
