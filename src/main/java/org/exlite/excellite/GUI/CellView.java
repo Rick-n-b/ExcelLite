@@ -118,4 +118,8 @@ public class CellView {
         textField.setText(text);
     }
 
+    public boolean getFocused(){
+        return isFocused;
+    }
+
 }
