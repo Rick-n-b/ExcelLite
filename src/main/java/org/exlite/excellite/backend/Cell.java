@@ -15,7 +15,6 @@ public class Cell {
     private final Table owner;
     public final int line, column;
 
-
     private String outputStr;
     private SimpleStringProperty innerStrProperty;
 
@@ -26,6 +25,9 @@ public class Cell {
         DATE
     }
 
+    private DataType dataType;
+
+    // Форматы для дат
     private static final DateTimeFormatter[] DATE_FORMATTERS = {
             DateTimeFormatter.ofPattern("dd.MM.yyyy"),
             DateTimeFormatter.ofPattern("dd/MM/yyyy"),
@@ -33,36 +35,18 @@ public class Cell {
             DateTimeFormatter.ofPattern("MM/dd/yyyy")
     };
 
+    // Регулярное выражение для чисел
     private static final Pattern NUMBER_PATTERN = Pattern.compile("^(-?)(0|([1-9][0-9]*))(\\.[0-9]+)?$");
-
-    private DataType dataType;
 
     public Cell(Table owner, int line, int column, double width, double height) {
         this.owner = owner;
         this.line = line;
         this.column = column;
         dataType = DataType.STRING;
+        innerStrProperty = new SimpleStringProperty("");
+        outputStr = "";
         cellView = new CellView(owner.getTable(), this, width, height);
     }
-
-
-    private boolean isDate(String text) {
-        for (DateTimeFormatter formatter : DATE_FORMATTERS) {
-            try {
-                LocalDate.parse(text, formatter);
-                return true;
-            } catch (DateTimeParseException e) {
-                return false;
-            }
-        }
-        return false;
-    }
-
-
-    private boolean isNumber(String text) {
-        return NUMBER_PATTERN.matcher(text).matches();
-    }
-
 
     private void dataValidation() {
         if (innerStrProperty == null || innerStrProperty.get() == null || innerStrProperty.get().isEmpty()) {
@@ -72,7 +56,7 @@ public class Cell {
 
         String text = innerStrProperty.get();
 
-        if (text.charAt(0) == '=') {
+        if (!text.isEmpty() && text.charAt(0) == '=') {
             dataType = DataType.FORMULA;
         } else if (isDate(text)) {
             dataType = DataType.DATE;
@@ -85,20 +69,41 @@ public class Cell {
         updateSmart();
     }
 
+    // Проверка, является ли строка датой
+    private boolean isDate(String text) {
+        for (DateTimeFormatter formatter : DATE_FORMATTERS) {
+            try {
+                LocalDate.parse(text, formatter);
+                return true;
+            } catch (DateTimeParseException e) {
+                // Продолжаем проверку со следующим форматом
+            }
+        }
+        return false;
+    }
+
+    // Проверка, является ли строка числом
+    private boolean isNumber(String text) {
+        return NUMBER_PATTERN.matcher(text).matches();
+    }
+
+    // Преобразование строки в соответствующий тип данных
     private Object parseValue(String text) {
         if (text == null || text.isEmpty()) {
             return "";
         }
 
-        if (isDate(text)) {
-            for (DateTimeFormatter formatter : DATE_FORMATTERS) {
-                try {
-                    return LocalDate.parse(text, formatter);
-                } catch (DateTimeParseException e) {
-                    // Продолжаем проверку
-                }
+        // Пробуем распарсить как дату
+        for (DateTimeFormatter formatter : DATE_FORMATTERS) {
+            try {
+                return LocalDate.parse(text, formatter);
+            } catch (DateTimeParseException e) {
+                // Продолжаем проверку
             }
-        } else if (isNumber(text)) {
+        }
+
+        // Пробуем распарсить как число
+        if (isNumber(text)) {
             try {
                 return Double.parseDouble(text);
             } catch (NumberFormatException e) {
@@ -106,10 +111,14 @@ public class Cell {
             }
         }
 
+        // Возвращаем как строку
         return text;
     }
 
     public void changeText(String text) {
+        if (text == null) {
+            text = "";
+        }
 
         if (innerStrProperty == null) {
             innerStrProperty = new SimpleStringProperty(text);
@@ -119,22 +128,19 @@ public class Cell {
 
         dataValidation();
 
-        if(dataType != DataType.FORMULA){
+        if (dataType == DataType.FORMULA && text.length() > 1) {
+            String result = evaluate(text.substring(1));
+            outputStr = result != null ? result : "err";
+        } else {
+            // Для не-формул outputStr совпадает с innerStr
             outputStr = text;
-        }else{
-
-            if(text.length() >= 2 && !cellView.getFocused())
-                outputStr = String.valueOf(evaluate(text.substring(1)));
-            else
-                outputStr = text;
         }
 
+        if (!cellView.getFocused())
+            setOutText();
 
-        // Для других типов данных outputStr уже установлен в dataValidation()
-        System.out.println("out: " + outputStr + "\tinner:  " + innerStrProperty.get());
+        // Обновляем все зависимые ячейки
         owner.updateSmartCells(this);
-        setOutText();
-
     }
 
     // Метод для определения приоритета оператора
@@ -147,6 +153,7 @@ public class Cell {
         };
     }
 
+    // Получение значения ячейки по координатам
     private Object getCellValue(int column, int line) {
         if (column < 0 || column >= owner.getColumns() || line < 0 || line >= owner.getLines()) {
             return "err";
@@ -155,48 +162,101 @@ public class Cell {
         Cell targetCell = owner.getCell(column, line);
         String cellOutput = targetCell.getOutputStr();
 
-        if (cellOutput == null || cellOutput.isEmpty()) {
-            return "";
+        if (cellOutput == null || cellOutput.isEmpty() || "err".equals(cellOutput)) {
+            return cellOutput != null ? cellOutput : "";
         }
 
-        // Для формул возвращаем результат вычисления
-        if (targetCell.getType() == DataType.FORMULA) {
-            return parseValue(cellOutput);
+        // В зависимости от типа данных ячейки возвращаем соответствующий объект
+        switch (targetCell.getType()) {
+            case NUMBER:
+                try {
+                    return Double.parseDouble(cellOutput);
+                } catch (NumberFormatException e) {
+                    return cellOutput; // Если не число, возвращаем как строку
+                }
+            case DATE:
+                for (DateTimeFormatter formatter : DATE_FORMATTERS) {
+                    try {
+                        return LocalDate.parse(cellOutput, formatter);
+                    } catch (DateTimeParseException e) {
+                        // Продолжаем проверку
+                    }
+                }
+                return cellOutput; // Если не дата, возвращаем как строку
+            case FORMULA:
+                // Для формул пытаемся определить тип результата
+                Double numberResult = tryParseToDouble(cellOutput);
+                if (numberResult != null) {
+                    return numberResult;
+                }
+                LocalDate dateResult = tryParseToDate(cellOutput);
+                if (dateResult != null) {
+                    return dateResult;
+                }
+                return cellOutput; // Если не число и не дата, возвращаем как строку
+            default: // STRING
+                return cellOutput;
         }
+    }
 
-        return parseValue(cellOutput);
+    private LocalDate tryParseToDate(String text) {
+        for (DateTimeFormatter formatter : DATE_FORMATTERS) {
+            try {
+                return LocalDate.parse(text, formatter);
+            } catch (DateTimeParseException e) {
+                // Продолжаем проверку
+            }
+        }
+        return null;
+    }
+
+    private Double tryParseToDouble(Object obj) {
+        if (obj instanceof Double) {
+            return (Double) obj;
+        }
+        if (obj instanceof String) {
+            try {
+                return Double.parseDouble((String) obj);
+            } catch (NumberFormatException e) {
+                return null;
+            }
+        }
+        if (obj instanceof Long) {
+            return ((Long) obj).doubleValue();
+        }
+        if (obj instanceof Integer) {
+            return ((Integer) obj).doubleValue();
+        }
+        return null;
     }
 
     // Проверка совместимости типов для операций
     private boolean areTypesCompatible(Object a, Object b, char operator) {
-        if (a instanceof Double && b instanceof Double) {
-            return true; // Оба числа - все операции
-        }
-
-        // Операции со строками
+        // Оператор + разрешен для любых типов
         if (operator == '+') {
-            // Конкатенация строк или строки с числом
-            return (a instanceof String || b instanceof String);
+            return true;
         }
 
+        // Для оператора - проверяем допустимые комбинации
+        if (operator == '-') {
+            return (a instanceof Double && b instanceof Double) ||
+                    (a instanceof LocalDate && b instanceof LocalDate) ||
+                    (a instanceof LocalDate && b instanceof Double) ||
+                    tryParseToDouble(a) != null && tryParseToDouble(b) != null;
+        }
+
+        // Для оператора * проверяем допустимые комбинации
         if (operator == '*') {
-            // Умножение строки на число (повторение)
-            return (a instanceof String && b instanceof Double) ||
-                    (a instanceof Double && b instanceof String);
+            return (a instanceof Double && b instanceof Double) ||
+                    (a instanceof String && b instanceof Double) ||
+                    (a instanceof Double && b instanceof String) ||
+                    tryParseToDouble(a) != null && tryParseToDouble(b) != null;
         }
 
-        // Операции с датами
-        if (a instanceof LocalDate) {
-            if (b instanceof Long && (operator == '+' || operator == '-')) {
-                return true; // Дата + дни
-            }
-            if (b instanceof LocalDate && operator == '-') {
-                return true; // Разница между датами
-            }
-        }
-
-        if (b instanceof LocalDate && a instanceof Long && operator == '+') {
-            return true; // Дни + дата
+        // Для операторов / и ^ нужны числа
+        if (operator == '/' || operator == '^') {
+            return (a instanceof Double && b instanceof Double) ||
+                    tryParseToDouble(a) != null && tryParseToDouble(b) != null;
         }
 
         return false;
@@ -205,69 +265,116 @@ public class Cell {
     // Выполнение операции с учетом типов данных
     private Object applyOperation(Object b, Object a, char operator) {
         try {
-            // Числовые операции
-            if (a instanceof Double && b instanceof Double) {
-                double numA = (Double) a;
-                double numB = (Double) b;
-                return switch (operator) {
-                    case '+' -> numA + numB;
-                    case '-' -> numA - numB;
-                    case '*' -> numA * numB;
-                    case '/' -> numB != 0 ? numA / numB : "err";
-                    case '^' -> Math.pow(numA, numB);
-                    default -> "err";
-                };
-            }
+            // Сначала выполняем операцию над исходными типами, потом преобразуем в строку
 
-            // Операции со строками
+            // Оператор + - особый случай, работает с разными типами
             if (operator == '+') {
-                // Конкатенация
+                // Если оба числа - математическое сложение
+                if (a instanceof Double && b instanceof Double) {
+                    return (Double) a + (Double) b;
+                }
+                // Если оба даты - ошибка (нельзя складывать даты)
+                if (a instanceof LocalDate && b instanceof LocalDate) {
+                    return "err";
+                }
+                // Дата + число дней
+                if (a instanceof LocalDate && b instanceof Double) {
+                    return ((LocalDate) a).plusDays(((Double) b).longValue());
+                }
+                // Число дней + дата
+                if (a instanceof Double && b instanceof LocalDate) {
+                    return ((LocalDate) b).plusDays(((Double) a).longValue());
+                }
+                // Во всех остальных случаях - конкатенация
                 return a.toString() + b.toString();
             }
 
+            // Оператор -
+            if (operator == '-') {
+                // Оба числа - вычитание
+                if (a instanceof Double && b instanceof Double) {
+                    return (Double) a - (Double) b;
+                }
+                // Разница между датами
+                if (a instanceof LocalDate && b instanceof LocalDate) {
+                    return java.time.temporal.ChronoUnit.DAYS.between((LocalDate) b, (LocalDate) a);
+                }
+                // Дата - число дней
+                if (a instanceof LocalDate && b instanceof Double) {
+                    return ((LocalDate) a).minusDays(((Double) b).longValue());
+                }
+                // Попробуем преобразовать в числа
+                Double numA = tryParseToDouble(a);
+                Double numB = tryParseToDouble(b);
+                if (numA != null && numB != null) {
+                    return numA - numB;
+                }
+                return "err";
+            }
+
+            // Оператор *
             if (operator == '*') {
-                // Повторение строки
+                // Оба числа - умножение
+                if (a instanceof Double && b instanceof Double) {
+                    return (Double) a * (Double) b;
+                }
+                // Строка * число (повторение)
                 if (a instanceof String && b instanceof Double) {
                     String str = (String) a;
                     int count = ((Double) b).intValue();
                     if (count < 0) return "err";
                     return str.repeat(count);
                 }
+                // Число * строка (повторение)
                 if (a instanceof Double && b instanceof String) {
                     String str = (String) b;
                     int count = ((Double) a).intValue();
                     if (count < 0) return "err";
                     return str.repeat(count);
                 }
+                // Попробуем преобразовать в числа
+                Double numA = tryParseToDouble(a);
+                Double numB = tryParseToDouble(b);
+                if (numA != null && numB != null) {
+                    return numA * numB;
+                }
+                return "err";
             }
 
-            // Операции с датами
-            if (a instanceof LocalDate) {
-                LocalDate date = (LocalDate) a;
-
-                if (b instanceof Long) {
-                    long days = (Long) b;
-                    if (operator == '+') {
-                        return date.plusDays(days);
-                    }
-                    if (operator == '-') {
-                        return date.minusDays(days);
-                    }
+            // Оператор /
+            if (operator == '/') {
+                // Оба числа - деление
+                if (a instanceof Double && b instanceof Double) {
+                    if ((Double) b == 0) return "err";
+                    return (Double) a / (Double) b;
                 }
-
-                if (b instanceof LocalDate && operator == '-') {
-                    LocalDate date2 = (LocalDate) b;
-                    return java.time.temporal.ChronoUnit.DAYS.between(date2, date);
+                // Попробуем преобразовать в числа
+                Double numA = tryParseToDouble(a);
+                Double numB = tryParseToDouble(b);
+                if (numA != null && numB != null) {
+                    if (numB == 0) return "err";
+                    return numA / numB;
                 }
+                return "err";
             }
 
-            if (b instanceof LocalDate && a instanceof Long && operator == '+') {
-                LocalDate date = (LocalDate) b;
-                long days = (Long) a;
-                return date.plusDays(days);
+            // Оператор ^ (степень)
+            if (operator == '^') {
+                // Оба числа - возведение в степень
+                if (a instanceof Double && b instanceof Double) {
+                    return Math.pow((Double) a, (Double) b);
+                }
+                // Попробуем преобразовать в числа
+                Double numA = tryParseToDouble(a);
+                Double numB = tryParseToDouble(b);
+                if (numA != null && numB != null) {
+                    return Math.pow(numA, numB);
+                }
+                return "err";
             }
 
             return "err";
+
         } catch (Exception e) {
             return "err";
         }
@@ -449,7 +556,9 @@ public class Cell {
     public void reEvaluate() {
         if (dataType == DataType.FORMULA && innerStrProperty != null &&
                 innerStrProperty.get().length() >= 2) {
-            outputStr = evaluate(innerStrProperty.get().substring(1));
+            String result = evaluate(innerStrProperty.get().substring(1));
+            outputStr = result != null ? result : "err";
+            setOutText();
         }
     }
 
@@ -463,7 +572,7 @@ public class Cell {
         }
     }
 
-
+    // Остальные методы остаются без изменений...
 
     private String coordinateParse() {
         StringBuilder out = new StringBuilder();
@@ -506,12 +615,11 @@ public class Cell {
         if (sub.matches("\\d{1,3}"))
             out[1] = Integer.parseInt(sub) - 1;
 
-
         return out;
     }
 
     public void highlight(){
-        cellView.hightlight();
+        cellView.highlight();
     }
 
     public void deHighlight(){
@@ -521,10 +629,6 @@ public class Cell {
     public void setFocused(){
         cellView.setFocused();
     }
-
-
-
-
 
     //--getters ands setters
     public DataType getType() {

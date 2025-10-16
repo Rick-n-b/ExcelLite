@@ -3,8 +3,6 @@ package org.exlite.excellite.GUI;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.scene.control.TextField;
-import javafx.scene.control.skin.TextFieldSkin;
-import javafx.scene.paint.Color;
 import org.exlite.excellite.backend.Cell;
 
 public class CellView {
@@ -25,38 +23,25 @@ public class CellView {
     }
 
     private void textFieldInit() {
-        cell.setOutputStr("");
-        cell.setInnerStr("");
-        cell.getInnerStrProperty().addListener((
-                (observableValue, oldStr, nStr) -> {
-                    if (nStr != null) {
-                        var coor = Cell.coordinateDeParse(TablePane.positionText.getText());
-
-                        if (coor[0] == cell.column)
-                            if (coor[1] == cell.line){
-                                cell.changeText(cell.getInnerStr());
-                                if (!isFocused)
-                                    textField.setText(cell.getOutputStr());
-                            }
-
-                    }
-                }));
-
         textField = new TextField();
         textField.resize(width, height);
         textField.setPrefSize(width, height);
         textField.setLayoutX(cell.column * width + TablePane.ASSIST_COLUMN_SIZE);
         textField.setLayoutY(cell.line * height + TablePane.ASSIST_COLUMN_SIZE);
 
+        // Устанавливаем начальное значение
+        textField.setText(cell.getOutputStr());
+
         textField.focusedProperty().addListener(((obs, oldVal, newVal) -> {
             if (newVal != null) {
                 isFocused = newVal;
                 if (isFocused) {
+                    // При фокусе показываем исходную формулу/текст
                     TablePane.positionText.setText(Cell.coordinateParse(cell.column, cell.line));
                     TablePane.innerText.setText(cell.getInnerStr());
-                    if(cell.getType() == Cell.DataType.FORMULA)
-                        textField.setText(cell.getInnerStr());
+                    textField.setText(cell.getInnerStr());
                 } else {
+                    // При потере фокуса показываем результат вычисления
                     textField.setText(cell.getOutputStr());
                 }
             }
@@ -64,37 +49,31 @@ public class CellView {
 
         textField.textProperty().addListener(new ChangeListener<String>() {
             @Override
-            public void changed(ObservableValue<? extends String> observableValue, String s, String t1) {
+            public void changed(ObservableValue<? extends String> observableValue, String oldText, String newText) {
                 if (isFocused) {
-                    cell.setInnerStr(textField.getText());
-                    TablePane.innerText.setText(cell.getInnerStr());
+                    cell.setInnerStr(newText);
+                    TablePane.innerText.setText(newText);
                 }
+            }
+        });
+
+        // Слушатель изменений внутреннего текста ячейки
+        cell.getInnerStrProperty().addListener((observable, oldValue, newValue) -> {
+            if (!isFocused) {
+                // Если ячейка не в фокусе, обновляем отображение результата
+                textField.setText(cell.getOutputStr());
             }
         });
 
         tablePane.mainView.getChildren().add(textField);
     }
 
-    public void hightlight(){
-        textField.setSkin(new TextFieldSkin(textField) {
-            @Override
-            protected void layoutChildren(double x, double y, double w, double h) {
-                super.layoutChildren(x, y, w, h);
-                textFillProperty().setValue(Color.GREEN);
-                textField.getProperties().put("colorChanged", true);
-            }
-        });
+    public void highlight(){
+        textField.setStyle("-fx-text-fill: green;");
     }
 
     public void deHighlight(){
-        textField.setSkin(new TextFieldSkin(textField) {
-            @Override
-            protected void layoutChildren(double x, double y, double w, double h) {
-                super.layoutChildren(x, y, w, h);
-                textFillProperty().setValue(Color.BLACK);
-                textField.getProperties().put("colorChanged", true);
-            }
-        });
+        textField.setStyle("-fx-text-fill: black;");
     }
 
 
