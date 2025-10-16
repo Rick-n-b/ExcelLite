@@ -66,10 +66,13 @@ public class Table {
 
 
     public void voidSearch(String value) {
+        System.out.println(value);
         for (var column : cells) {
             for (var cell : column) {
-                if(cell.getOutputStr().contains(value))
+                if(cell.getOutputStr().contains(value) && !value.isEmpty())
                     cell.highlight();
+                else
+                    cell.deHighlight();
             }
         }
     }

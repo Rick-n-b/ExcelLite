@@ -77,8 +77,79 @@ public class Cell {
                 }
                 yield a / b;
             }
+            case '^' -> Math.pow(a, b);
             default -> 0;
         };
+    }
+
+    private static Object applyOp(Object bb, Object aa, char operator){
+        if(bb instanceof Double && aa instanceof Double){
+            double b = (Double) bb;
+            double a = (Double) aa;
+            return switch (operator) {
+                case '+' -> a + b;
+                case '-' -> a - b;
+                case '*' -> a * b;
+                case '/' -> {
+                    if (b == 0) {
+                        yield Double.MAX_VALUE;
+                    }
+                    yield a / b;
+                }
+                case '^' -> Math.pow(a, b);
+                default -> 0;
+            };
+        }
+        if(bb instanceof Double && aa instanceof String) {
+            double b = (Double) bb;
+            String a = (String) aa;
+            String out = "";
+             switch (operator) {
+                 case '+':
+                     out = a + b;
+                    break;
+                 case '*':
+                     for(int i = 0; i < b; i++ ){
+                         out += a;
+                     }
+                     break;
+                 default:
+                     out = "";
+                     break;
+            }
+             return out;
+        }
+        if(bb instanceof String && aa instanceof Double) {
+            String b = (String) bb;
+            double a = (Double) aa;
+            String out = b;
+            StringBuilder stringBuilder = new StringBuilder(b);
+            switch (operator) {
+                case '+':
+                    out = a + b;
+                    break;
+                case '*':
+                    for(int i = 0; i < a; i++ ){
+                        out += b;
+                    }
+                    break;
+                case '^':
+                    for(int i = 1; i < a; i++ ){
+                        for(int j = 0; j < out.length(); j++) {
+                            stringBuilder.insert(j, out);
+                        }
+                        out = stringBuilder.toString();
+                    }
+                    break;
+                default:
+                    out = "";
+                    break;
+            }
+            return out;
+        }
+
+
+        return null;
     }
 
     public String evaluate(String expression) {
@@ -90,7 +161,7 @@ public class Cell {
         for (int i = 0; i < expression.length(); i++) {
             char c = expression.charAt(i);
 
-            if (Character.isDigit(c) || Character.isUpperCase(c) || c == '\\' || (c == '-' && (i == 0 || expression.charAt(i - 1) == '('))) {
+            if (Character.isDigit(c) || Character.isAlphabetic(c) || c == '\\' || (c == '-' && (i == 0 || expression.charAt(i - 1) == '('))) {
 
                 StringBuilder sb = new StringBuilder();
                 if (c == '-') {
@@ -148,7 +219,7 @@ public class Cell {
                 } else {
                     return "err";
                 }
-            } else if (c == '+' || c == '-' || c == '*' || c == '/') {
+            } else if (c == '+' || c == '-' || c == '*' || c == '/' || c == '^') {
                 while (!operators.isEmpty() && getPrecedence(c) <= getPrecedence(operators.peek())) {
                     values.push(applyOperation(values.pop(), values.pop(), operators.pop()));
                 }
@@ -241,6 +312,10 @@ public class Cell {
 
     public void highlight(){
         cellView.hightlight();
+    }
+
+    public void deHighlight(){
+        cellView.deHighlight();
     }
 
     public void setFocused(){
